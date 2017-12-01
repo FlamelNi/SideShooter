@@ -264,7 +264,7 @@ function spawnEnemy()
   if( game.time.now >= (lastSpawnTime + ENEMY_SPAWN_RATE) )
   {
     
-    lastSpawnTime = game.time.now + Math.random(5)*500;
+    lastSpawnTime = game.time.now + Math.floor(Math.random()*1000%4)*200;
 
     //gets any element of enemies that is not objectified yet
     var enemy = enemies.getFirstExists(false);
@@ -277,6 +277,7 @@ function spawnEnemy()
       game.physics.enable(enemy, Phaser.Physics.ARCADE);
       enemy.body.allowGravity = true;
       enemy.body.gravity.y = PLAYER_GRAVITY;
+      enemy.width = enemy.width * (Math.floor(Math.random()*1000%2)*2-1);
       enemy.body.collideWorldBounds = true;//does enemy collided with world bound
     }//if enemy
     
@@ -302,7 +303,6 @@ function enemyMove(enemy)
     enemy.body.velocity.x = -(ENEMY_SPEED + Math.floor((game.time.now / 6000))*50);
 
   }
-  console.log(game.time.now);
   rifle.bullets.forEachExists(bulletHitEnemy, this, enemy);
 
 }
