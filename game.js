@@ -29,6 +29,7 @@ var enemy_speed = ENEMY_BASE_SPEED;
 
 //objects
 var player;
+var playerHand;
 var floor;
 var floor1;
 var floor2;
@@ -42,24 +43,35 @@ var deadEnemy;
 var emptyShell;
 
 // load images and resources
-function preload() {
+function preload()
+{
 
 	game.load.image('gray',				'asset/gray.jpg');
 	game.load.image('platform',		'asset/platform.jpg');
-	game.load.image('player', 		'asset/man.gif');
+	game.load.image('man', 		    'asset/man.gif');
+  game.load.image('player', 		'asset/gunGuy.png');
   game.load.image('red',        'asset/red.png');
   game.load.image('yellow',     'asset/particleYellow.png');
+  game.load.image('bullet',     'asset/bullet.png');
 
 }
 
-function create() {
+function create()
+{
+
+  this.game.scale.fullScreenScaleMode = Phaser.ScaleManager.SHOW_ALL;
+  game.input.keyboard.addKeyCapture([ Phaser.Keyboard.ENTER ]);
+  game.input.onDown.add(goFull, this);
+  
+  // game.renderer.clearBeforeRender = false;
+  // game.renderer.roundPixels = true;
 
   //  Background
 	game.add.tileSprite(0, 0, game.width, game.height, 'gray');
 
 	//player set up
 	player = game.add.sprite(300, 400, 'player');
-	player.anchor.set(0.5,0.5);
+	player.anchor.set(0.4,0.5);
 
 	//floor set up
 	floor = game.add.sprite(400,550, 'platform');
@@ -103,7 +115,7 @@ function create() {
 	floor3.body.immovable = true;
 
   //weapon
-  rifle = game.add.weapon(20, 'red');
+  rifle = game.add.weapon(20, 'bullet');
   rifle.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
   rifle.bulletSpeed = 1000;
   rifle.fireRate = 500;
@@ -113,7 +125,7 @@ function create() {
   enemies.enableBody = true;
   enemies.physicsBodyType = Phaser.Physics.ARCADE;
 
-  enemies.createMultiple(25, 'player');
+  enemies.createMultiple(25, 'man');
   enemies.setAll('anchor.x', 0.5);
   enemies.setAll('anchor.y', 0.5);
   
@@ -122,15 +134,15 @@ function create() {
   );
   
   gameOverDisplay = game.add.text(
-    225,    game.height/2, '', { font: '30px Arial', fill: '#ff0000', align: 'center' }
+    270,    game.height/2, '', { font: '30px Arial', fill: '#ff0000', align: 'center' }
   );
 
   deadEnemy = game.add.emitter(400, 400, 30);
-  deadEnemy.makeParticles('player', 0, 30, true);
+  deadEnemy.makeParticles('man', 0, 30, true);
   deadEnemy.gravity = PLAYER_GRAVITY;
   
   emptyShell = game.add.emitter(400, 400, 30);
-  emptyShell.makeParticles('yellow', 0, 30, true);
+  emptyShell.makeParticles('bullet', 0, 30, true);
   emptyShell.gravity = PLAYER_GRAVITY;
   
   floor1.body.velocity.x = FLOOR_SPEED;
@@ -140,7 +152,7 @@ function create() {
   floor2.body.collideWorldBounds = true;
   player.body.collideWorldBounds = true;
   
-
+  reinitialize();
 }//create
 
 function update()
@@ -186,7 +198,7 @@ function update()
     }
     if(rifle.fire())
     {
-      emptyShellEffect(player.body.x, player.body.y);
+      emptyShellEffect(player.body.x + Math.abs(player.width/2) + player.width*1/3, player.body.y);
     }
   }//if
 
@@ -337,7 +349,6 @@ function getEnemySpeed()
   {
     speed = ENEMY_BASE_SPEED + parseInt(enemy_level_cap[2])/100;
   }
-  console.log(speed);
   return speed;
 }
 
@@ -397,31 +408,15 @@ function deadEnemyEffect(x,y)
     //  The final parameter (10) is how many particles will be emitted in this single burst
     deadEnemy.setYSpeed(-400, -600);
     deadEnemy.start(true, 2000, null, 1);
-    
-    // deadEnemy.getClosestTo(player,
-    //   function(p)
-    //   {
-    //     p.body.velocity.y = -100;
-    //   }, this);
-
-    // deadEnemy.forEachExists(
-    //   function(particle)
-    //   {
-    //     particle.body.velocity.x = 100;
-    //     particle.body.velocity.y = -100;
-    //   },this)
-
 }
 
 function emptyShellEffect(x,y)
 {
-  
     emptyShell.x = x
     emptyShell.y = y;
     
     emptyShell.setYSpeed(-400, -600);
     emptyShell.start(true, 2000, null, 1);
-    
 }
 
 
@@ -429,11 +424,20 @@ function reinitialize()
 {
   lastSpawnTime = 0;
   score = 0;
-  lastScoreGiven = 0;
+  lastScoreGiven = game.time.now;
   enemy_speed = ENEMY_BASE_SPEED;
   stop = false;
 }
 
+function goFull()
+{
+	    if (game.scale.isFullScreen) {
+	        game.scale.stopFullScreen();
+	    }
+	    else {
+	        game.scale.startFullScreen(false);
+	    }
+}
 
 
 
