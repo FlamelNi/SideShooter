@@ -8,14 +8,24 @@ var PLAYER_FRICTION = 0.96;
 var PLAYER_MAX_SPEED = 300;
 var ENEMY_SPAWN_RATE = 1000;
 var ENEMY_LIFESPAN = 6500;
-var ENEMY_SPEED = 300;
+var ENEMY_BASE_SPEED = 300;
 var TIME_SCORE_RATE = 2000;
 var FLOOR_SPEED = 100;
+
+var enemy_level_cap = [7000,12000];
+/*
+{
+  most people fail,
+  max speed reached
+
+}
+*/
 
 //variables
 var lastSpawnTime = 0;
 var score = 0;
 var lastScoreGiven = 0;
+var enemy_speed = ENEMY_BASE_SPEED;
 
 //objects
 var player;
@@ -26,29 +36,33 @@ var floor3;
 var rifle;
 var enemies;
 var scoreDisplay;
+var gameOverDisplay;
 var stop = false;
+var deadEnemy;
+var emptyShell;
 
 // load images and resources
 function preload() {
 
-	game.load.image("gray",				"asset/gray.jpg");
-	game.load.image("platform",		"asset/platform.jpg");
-	game.load.image("player", 		"asset/man.gif");
-  game.load.image("red",        "asset/red.png");
+	game.load.image('gray',				'asset/gray.jpg');
+	game.load.image('platform',		'asset/platform.jpg');
+	game.load.image('player', 		'asset/man.gif');
+  game.load.image('red',        'asset/red.png');
+  game.load.image('yellow',     'asset/particleYellow.png');
 
 }
 
 function create() {
 
   //  Background
-	game.add.tileSprite(0, 0, game.width, game.height, "gray");
+	game.add.tileSprite(0, 0, game.width, game.height, 'gray');
 
 	//player set up
-	player = game.add.sprite(300, 400, "player");
+	player = game.add.sprite(300, 400, 'player');
 	player.anchor.set(0.5,0.5);
 
 	//floor set up
-	floor = game.add.sprite(400,550, "platform");
+	floor = game.add.sprite(400,550, 'platform');
 	floor.width = 600;
 	floor.height = 40;
 	floor.anchor.set(0.5,0.5);
@@ -66,17 +80,17 @@ function create() {
 	game.physics.enable(floor, Phaser.Physics.ARCADE);
 	floor.body.immovable = true;
 
-	floor1 = game.add.sprite(150, 350, "platform");
+	floor1 = game.add.sprite(150, 350, 'platform');
 	floor1.width = 200;
 	floor1.height = 40;
 	floor1.anchor.set(0.5, 0.5);
 
-	floor2 = game.add.sprite(650, 350, "platform");
+	floor2 = game.add.sprite(650, 350, 'platform');
 	floor2.width = 200;
 	floor2.height = 40;
 	floor2.anchor.set(0.5, 0.5);
 
-	floor3 = game.add.sprite(400, 200, "platform");
+	floor3 = game.add.sprite(400, 200, 'platform');
 	floor3.width = 300;
 	floor3.height = 40;
 	floor3.anchor.set(0.5, 0.5);
@@ -104,12 +118,20 @@ function create() {
   enemies.setAll('anchor.y', 0.5);
   
   scoreDisplay = game.add.text(
-    game.width/10,    50, "", { font: "30px Arial", fill: "#ff0044", align: "center" }
+    game.width/10,    50, '', { font: '30px Arial', fill: '#0079ff', align: 'center' }
+  );
+  
+  gameOverDisplay = game.add.text(
+    225,    game.height/2, '', { font: '30px Arial', fill: '#ff0000', align: 'center' }
   );
 
   deadEnemy = game.add.emitter(400, 400, 30);
   deadEnemy.makeParticles('player', 0, 30, true);
   deadEnemy.gravity = PLAYER_GRAVITY;
+  
+  emptyShell = game.add.emitter(400, 400, 30);
+  emptyShell.makeParticles('yellow', 0, 30, true);
+  emptyShell.gravity = PLAYER_GRAVITY;
   
   floor1.body.velocity.x = FLOOR_SPEED;
   floor2.body.velocity.x = -FLOOR_SPEED;
@@ -126,12 +148,19 @@ function update()
   
   if(stop)
   {
+    gameOverDisplay.setText('Game Over\nPress [R] to Restart');
+    if(game.input.keyboard.isDown(Phaser.Keyboard.R))
+    {
+      //reinitialize
+      create();
+      reinitialize();
+    }
     return;
+    
   }
   
-  
 	// collsion
-	collision();
+	playerCollision();
 
 	//friction
 	friction();
@@ -155,7 +184,10 @@ function update()
     {
       rifle.fireAngle = 180;
     }
-    rifle.fire();
+    if(rifle.fire())
+    {
+      emptyShellEffect(player.body.x, player.body.y);
+    }
   }//if
 
   
@@ -167,14 +199,14 @@ function update()
   game.physics.arcade.collide(enemies, floor2);
   game.physics.arcade.collide(enemies, floor3);
 
-  //run function called "enemyMove" and put 
-  //"for each enemy that currently is objectified"
+  //run function called 'enemyMove' and put 
+  //'for each enemy that currently is objectified'
   //as a parameter 
   enemies.forEachExists(enemyMove, this);
   
   addScore();
   
-  scoreDisplay.setText("Score: " + score.toString());
+  scoreDisplay.setText('Score: ' + score.toString());
 
   deadEnemy.bounce.setTo(0.5,1);
 
@@ -187,11 +219,12 @@ function update()
     rifle.killAll();
     stop = true;
     
-    //challenge:
-    //make game resetable by pressing 'R' instead of refreshing the page
-    
   }
 
+  game.physics.arcade.collide(emptyShell, floor);
+  game.physics.arcade.collide(emptyShell, floor1);
+  game.physics.arcade.collide(emptyShell, floor2);
+  game.physics.arcade.collide(emptyShell, floor3);
 
   if(game.physics.arcade.collide(floor1, floor2))
   {
@@ -226,7 +259,7 @@ function movePlayer()
 
 }//movePlayer
 
-function collision()
+function playerCollision()
 {
 	if(game.physics.arcade.collide(player, floor) ||
 		game.physics.arcade.collide(player, floor1) ||
@@ -269,7 +302,7 @@ function spawnEnemy()
     //gets any element of enemies that is not objectified yet
     var enemy = enemies.getFirstExists(false);
 
-    //if "enemy" exists (enemies have at least one un-objectified element)
+    //if 'enemy' exists (enemies have at least one un-objectified element)
     if (enemy)
     {
       enemy.reset(400, 120);//set position
@@ -286,6 +319,28 @@ function spawnEnemy()
 }
 
 
+function getEnemyLevel()
+{
+  for(var i = 0; i < enemy_level_cap.length; i++)
+  {
+    if(score >= enemy_level_cap[i])
+      return i;
+  }
+  
+  return enemy_level_cap;
+}
+
+function getEnemySpeed()
+{
+  var speed = ENEMY_BASE_SPEED + score/100;
+  if(getEnemyLevel >= 2 )
+  {
+    speed = ENEMY_BASE_SPEED + parseInt(enemy_level_cap[2])/100;
+  }
+  console.log(speed);
+  return speed;
+}
+
 function enemyMove(enemy)
 {
   if(enemy.body.onWall())
@@ -294,13 +349,13 @@ function enemyMove(enemy)
   }
   if(enemy.width > 0)
   {
-    // enemy.body.velocity.x =  ENEMY_SPEED;
-    enemy.body.velocity.x = ENEMY_SPEED + Math.floor((game.time.now / 6000))*50;
+    // enemy.body.velocity.x =  ENEMY_BASE_SPEED;
+    enemy.body.velocity.x = enemy_speed;
   }
   else
   {
-    // enemy.body.velocity.x = -ENEMY_SPEED;
-    enemy.body.velocity.x = -(ENEMY_SPEED + Math.floor((game.time.now / 6000))*50);
+    // enemy.body.velocity.x = -ENEMY_BASE_SPEED;
+    enemy.body.velocity.x = -enemy_speed;
 
   }
   rifle.bullets.forEachExists(bulletHitEnemy, this, enemy);
@@ -316,6 +371,7 @@ function bulletHitEnemy(bullet, enemy)
     bullet.kill();
     enemy.kill();
     score = score + 500;
+    enemy_speed = getEnemySpeed();
   }
 }
 
@@ -325,17 +381,17 @@ function addScore()
   {
     score = score + 100;
     lastScoreGiven = game.time.now;
+    enemy_speed = getEnemySpeed();
   }
 }
 
 
-function deadEnemyEffect(x,y) {
-
-    //  Position the emitter where the mouse/touch event was
+function deadEnemyEffect(x,y)
+{
     deadEnemy.x = x
     deadEnemy.y = y;
 
-    //  The first parameter sets the effect to "explode" which means all particles are emitted at once
+    //  The first parameter sets the effect to 'explode' which means all particles are emitted at once
     //  The second gives each particle a 2000ms lifespan
     //  The third is ignored when using burst/explode mode
     //  The final parameter (10) is how many particles will be emitted in this single burst
@@ -357,16 +413,26 @@ function deadEnemyEffect(x,y) {
 
 }
 
+function emptyShellEffect(x,y)
+{
+  
+    emptyShell.x = x
+    emptyShell.y = y;
+    
+    emptyShell.setYSpeed(-400, -600);
+    emptyShell.start(true, 2000, null, 1);
+    
+}
 
 
-/*
-challenge:
-
-Reduce score if enemy goes down to hole
-
-Player gets higher score if enemy dies in higher altitude
-
-*/
+function reinitialize()
+{
+  lastSpawnTime = 0;
+  score = 0;
+  lastScoreGiven = 0;
+  enemy_speed = ENEMY_BASE_SPEED;
+  stop = false;
+}
 
 
 
