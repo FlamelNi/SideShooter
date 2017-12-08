@@ -41,19 +41,21 @@ var gameOverDisplay;
 var stop = false;
 var deadEnemy;
 var emptyShell;
+var hand;
 
 // load images and resources
 function preload()
 {
 
-	game.load.image('gray',				'asset/gray.jpg');
-	game.load.image('platform',		'asset/platform.jpg');
-	game.load.image('man', 		    'asset/man.gif');
-  game.load.image('player', 		'asset/gunGuy.png');
-  game.load.image('red',        'asset/red.png');
-  game.load.image('yellow',     'asset/particleYellow.png');
-  game.load.image('bullet',     'asset/bullet.png');
-
+	game.load.image('gray',				      'asset/gray.jpg');
+	game.load.image('platform',		      'asset/platform.jpg');
+	game.load.image('man', 		          'asset/man.gif');
+  game.load.image('player', 		      'asset/capMan.png');
+  game.load.image('red',              'asset/red.png');
+  game.load.image('yellow',           'asset/particleYellow.png');
+  game.load.image('bullet',           'asset/bullet.png');
+  
+  game.load.spritesheet('pistol',     'asset/pistolHand.png', 37, 47);
 }
 
 function create()
@@ -71,7 +73,7 @@ function create()
 
 	//player set up
 	player = game.add.sprite(300, 400, 'player');
-	player.anchor.set(0.4,0.5);
+	player.anchor.set(0.5,0.5);
 
 	//floor set up
 	floor = game.add.sprite(400,550, 'platform');
@@ -152,6 +154,13 @@ function create()
   floor2.body.collideWorldBounds = true;
   player.body.collideWorldBounds = true;
   
+  hand = game.add.sprite(300, 400, 'pistol');
+  game.physics.enable(hand, Phaser.Physics.ARCADE);
+  hand.anchor.set(-0.1, 0.5);
+  hand.animations.add('shoot', [1,0], 7, false);
+  hand.animations.add('idle', [0], 1, false);
+  hand.animations.play('idle');
+  
   reinitialize();
 }//create
 
@@ -171,6 +180,9 @@ function update()
     
   }
   
+  hand.x = player.x;
+  hand.y = player.y;
+  
 	// collsion
 	playerCollision();
 
@@ -187,7 +199,7 @@ function update()
   //weapon
   if(game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR))
   {
-    rifle.trackSprite(player, player.width, 0);
+    rifle.trackSprite(player, player.width, -10);
     if(player.width > 0)
     {
       rifle.fireAngle = 0;
@@ -198,6 +210,7 @@ function update()
     }
     if(rifle.fire())
     {
+      hand.animations.play('shoot', 10);
       emptyShellEffect(player.body.x + Math.abs(player.width/2) + player.width*1/3, player.body.y);
     }
   }//if
@@ -258,11 +271,13 @@ function movePlayer()
 	{
 		player.body.acceleration.x = -PLAYER_SPEED;
     player.width = -Math.abs(player.width);
+    hand.width = -Math.abs(hand.width);
 	}
 	else if (game.input.keyboard.isDown(Phaser.Keyboard.RIGHT))
 	{
 		player.body.acceleration.x = PLAYER_SPEED;
     player.width = Math.abs(player.width);
+    hand.width = Math.abs(hand.width);
 	}
 	else
 	{
