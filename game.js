@@ -47,15 +47,17 @@ var hand;
 function preload()
 {
 
-	game.load.image('gray',				      'asset/gray.jpg');
-	game.load.image('platform',		      'asset/platform.jpg');
-	game.load.image('man', 		          'asset/man.gif');
-  game.load.image('player', 		      'asset/capMan.png');
+  game.load.image('gray',              'asset/gray.jpg');
+  game.load.image('platform',          'asset/platform.jpg');
+  game.load.image('man',               'asset/man.gif');
+  game.load.image('player',           'asset/capMan.png');
   game.load.image('red',              'asset/red.png');
   game.load.image('yellow',           'asset/particleYellow.png');
   game.load.image('bullet',           'asset/bullet.png');
   
-  game.load.spritesheet('pistol',     'asset/pistolHand.png', 37, 47);
+  game.load.spritesheet('pistol',     'asset/pistolHand.png', 46, 47);
+  
+  game.load.audio('pistolFire',       'asset/pulseGun.ogg');
 }
 
 function create()
@@ -69,52 +71,52 @@ function create()
   // game.renderer.roundPixels = true;
 
   //  Background
-	game.add.tileSprite(0, 0, game.width, game.height, 'gray');
+  game.add.tileSprite(0, 0, game.width, game.height, 'gray');
 
-	//player set up
-	player = game.add.sprite(300, 400, 'player');
-	player.anchor.set(0.5,0.5);
+  //player set up
+  player = game.add.sprite(300, 400, 'player');
+  player.anchor.set(0.5,0.5);
 
-	//floor set up
-	floor = game.add.sprite(400,550, 'platform');
-	floor.width = 600;
-	floor.height = 40;
-	floor.anchor.set(0.5,0.5);
+  //floor set up
+  floor = game.add.sprite(400,550, 'platform');
+  floor.width = 600;
+  floor.height = 40;
+  floor.anchor.set(0.5,0.5);
 
-	//physics engine
-	game.physics.startSystem(Phaser.Physics.ARCADE);
-	//apply physics to player sprite
-	game.physics.enable(player, Phaser.Physics.ARCADE);
+  //physics engine
+  game.physics.startSystem(Phaser.Physics.ARCADE);
+  //apply physics to player sprite
+  game.physics.enable(player, Phaser.Physics.ARCADE);
 
-	//physics - gravity
-	player.body.allowGravity = true;
-	player.body.gravity.y = PLAYER_GRAVITY;
+  //physics - gravity
+  player.body.allowGravity = true;
+  player.body.gravity.y = PLAYER_GRAVITY;
 
-	//floor is immovable
-	game.physics.enable(floor, Phaser.Physics.ARCADE);
-	floor.body.immovable = true;
+  //floor is immovable
+  game.physics.enable(floor, Phaser.Physics.ARCADE);
+  floor.body.immovable = true;
 
-	floor1 = game.add.sprite(150, 350, 'platform');
-	floor1.width = 200;
-	floor1.height = 40;
-	floor1.anchor.set(0.5, 0.5);
+  floor1 = game.add.sprite(150, 350, 'platform');
+  floor1.width = 200;
+  floor1.height = 40;
+  floor1.anchor.set(0.5, 0.5);
 
-	floor2 = game.add.sprite(650, 350, 'platform');
-	floor2.width = 200;
-	floor2.height = 40;
-	floor2.anchor.set(0.5, 0.5);
+  floor2 = game.add.sprite(650, 350, 'platform');
+  floor2.width = 200;
+  floor2.height = 40;
+  floor2.anchor.set(0.5, 0.5);
 
-	floor3 = game.add.sprite(400, 200, 'platform');
-	floor3.width = 300;
-	floor3.height = 40;
-	floor3.anchor.set(0.5, 0.5);
+  floor3 = game.add.sprite(400, 200, 'platform');
+  floor3.width = 300;
+  floor3.height = 40;
+  floor3.anchor.set(0.5, 0.5);
 
-	game.physics.enable(floor1, Phaser.Physics.ARCADE);
-	floor1.body.immovable = true;
-	game.physics.enable(floor2, Phaser.Physics.ARCADE);
-	floor2.body.immovable = true;
-	game.physics.enable(floor3, Phaser.Physics.ARCADE);
-	floor3.body.immovable = true;
+  game.physics.enable(floor1, Phaser.Physics.ARCADE);
+  floor1.body.immovable = true;
+  game.physics.enable(floor2, Phaser.Physics.ARCADE);
+  floor2.body.immovable = true;
+  game.physics.enable(floor3, Phaser.Physics.ARCADE);
+  floor3.body.immovable = true;
 
   //weapon
   rifle = game.add.weapon(20, 'bullet');
@@ -157,9 +159,20 @@ function create()
   hand = game.add.sprite(300, 400, 'pistol');
   game.physics.enable(hand, Phaser.Physics.ARCADE);
   hand.anchor.set(-0.1, 0.5);
-  hand.animations.add('shoot', [1,0], 7, false);
-  hand.animations.add('idle', [0], 1, false);
+  hand.animations.add('shoot', [1,2,0]);
+  hand.animations.add('idle', [0]);
   hand.animations.play('idle');
+  
+  rifle.onFire.add(
+    function()
+    {
+      var music;
+      music = game.add.audio('pistolFire');
+      music.play();
+      hand.animations.play('shoot', 10);
+      emptyShellEffect(player.body.x + Math.abs(player.width/2) + player.width*6/7, player.body.y);
+    }
+  );
   
   reinitialize();
 }//create
@@ -183,17 +196,17 @@ function update()
   hand.x = player.x;
   hand.y = player.y;
   
-	// collsion
-	playerCollision();
+  // collsion
+  playerCollision();
 
-	//friction
-	friction();
+  //friction
+  friction();
 
-	//speed limit
-	speedLimit();
+  //speed limit
+  speedLimit();
 
-	// function for player movement
-	movePlayer();
+  // function for player movement
+  movePlayer();
 
 
   //weapon
@@ -208,11 +221,7 @@ function update()
     {
       rifle.fireAngle = 180;
     }
-    if(rifle.fire())
-    {
-      hand.animations.play('shoot', 10);
-      emptyShellEffect(player.body.x + Math.abs(player.width/2) + player.width*1/3, player.body.y);
-    }
+    rifle.fire();
   }//if
 
   
@@ -242,6 +251,7 @@ function update()
     player.kill();
     enemies.killAll();
     rifle.killAll();
+    hand.kill();
     stop = true;
     
   }
@@ -267,53 +277,53 @@ function update()
 
 function movePlayer()
 {
-	if (game.input.keyboard.isDown(Phaser.Keyboard.LEFT))
-	{
-		player.body.acceleration.x = -PLAYER_SPEED;
+  if (game.input.keyboard.isDown(Phaser.Keyboard.LEFT))
+  {
+    player.body.acceleration.x = -PLAYER_SPEED;
     player.width = -Math.abs(player.width);
     hand.width = -Math.abs(hand.width);
-	}
-	else if (game.input.keyboard.isDown(Phaser.Keyboard.RIGHT))
-	{
-		player.body.acceleration.x = PLAYER_SPEED;
+  }
+  else if (game.input.keyboard.isDown(Phaser.Keyboard.RIGHT))
+  {
+    player.body.acceleration.x = PLAYER_SPEED;
     player.width = Math.abs(player.width);
     hand.width = Math.abs(hand.width);
-	}
-	else
-	{
-		player.body.acceleration.x = 0;
-	}
+  }
+  else
+  {
+    player.body.acceleration.x = 0;
+  }
 
 }//movePlayer
 
 function playerCollision()
 {
-	if(game.physics.arcade.collide(player, floor) ||
-		game.physics.arcade.collide(player, floor1) ||
-		game.physics.arcade.collide(player, floor2) ||
-		game.physics.arcade.collide(player, floor3) )
-	{
-		//jump
-		if (game.input.keyboard.isDown(Phaser.Keyboard.UP) &&
-				player.body.touching.down)
-		{
-			player.body.velocity.y = PLAYER_JUMP;
-		}
-	}
+  if(game.physics.arcade.collide(player, floor) ||
+    game.physics.arcade.collide(player, floor1) ||
+    game.physics.arcade.collide(player, floor2) ||
+    game.physics.arcade.collide(player, floor3) )
+  {
+    //jump
+    if (game.input.keyboard.isDown(Phaser.Keyboard.UP) &&
+        player.body.touching.down)
+    {
+      player.body.velocity.y = PLAYER_JUMP;
+    }
+  }
 
 }
 
 function friction()
 {
-	player.body.velocity.x *= PLAYER_FRICTION;
+  player.body.velocity.x *= PLAYER_FRICTION;
 }
 
 function speedLimit()
 {
-	if(Math.abs(player.body.velocity.x) >= PLAYER_MAX_SPEED)
-	{
-		player.body.velocity.x *= PLAYER_MAX_SPEED/Math.abs(player.body.velocity.x);
-	}
+  if(Math.abs(player.body.velocity.x) >= PLAYER_MAX_SPEED)
+  {
+    player.body.velocity.x *= PLAYER_MAX_SPEED/Math.abs(player.body.velocity.x);
+  }
 }
 
 function spawnEnemy()
@@ -446,12 +456,12 @@ function reinitialize()
 
 function goFull()
 {
-	    if (game.scale.isFullScreen) {
-	        game.scale.stopFullScreen();
-	    }
-	    else {
-	        game.scale.startFullScreen(false);
-	    }
+      if (game.scale.isFullScreen) {
+          game.scale.stopFullScreen();
+      }
+      else {
+          game.scale.startFullScreen(false);
+      }
 }
 
 
