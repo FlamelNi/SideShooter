@@ -182,7 +182,7 @@ function recreate()
   );
   
   debugDisplay = game.add.text(
-    game.width*7/10,    50, '', { font: '30px Arial', fill: '#0079ff', align: 'center' }
+    game.width*7/10,    50, '', { font: '30px Arial', fill: '#ff6b00', align: 'center' }
   );
   
 }
@@ -384,8 +384,6 @@ function getEnemySpeed()
   {
     speed = ENEMY_BASE_SPEED + parseInt(enemy_level_cap[0])/100;
   }
-  //test
-  debug(speed);
   return speed;
 }
 
