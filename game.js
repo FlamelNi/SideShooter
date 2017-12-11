@@ -12,11 +12,11 @@ var ENEMY_BASE_SPEED = 300;
 var TIME_SCORE_RATE = 2000;
 var FLOOR_SPEED = 100;
 
-var enemy_level_cap = [7000,12000];
+var enemy_level_cap = [12000,25000,99999999];
 /*
 {
-  most people fail,
-  max speed reached
+  max speed reached,
+  shoot bullet forward
 
 }
 */
@@ -42,6 +42,7 @@ var stop = false;
 var deadEnemy;
 var emptyShell;
 var hand;
+var debugDisplay;
 
 // load images and resources
 function preload()
@@ -73,6 +74,118 @@ function create()
   recreate();
   reinitialize();
 }//create
+
+function recreate()
+{
+  //  Background
+  game.add.tileSprite(0, 0, game.width, game.height, 'gray');
+
+  //player set up
+  player = game.add.sprite(300, 400, 'player');
+  player.anchor.set(0.5,0.5);
+
+  //floor set up
+  floor = game.add.sprite(400,550, 'platform');
+  floor.width = 600;
+  floor.height = 40;
+  floor.anchor.set(0.5,0.5);
+
+  //physics engine
+  game.physics.startSystem(Phaser.Physics.ARCADE);
+  //apply physics to player sprite
+  game.physics.enable(player, Phaser.Physics.ARCADE);
+
+  //physics - gravity
+  player.body.allowGravity = true;
+  player.body.gravity.y = PLAYER_GRAVITY;
+
+  //floor is immovable
+  game.physics.enable(floor, Phaser.Physics.ARCADE);
+  floor.body.immovable = true;
+
+  floor1 = game.add.sprite(150, 350, 'platform');
+  floor1.width = 200;
+  floor1.height = 40;
+  floor1.anchor.set(0.5, 0.5);
+
+  floor2 = game.add.sprite(650, 350, 'platform');
+  floor2.width = 200;
+  floor2.height = 40;
+  floor2.anchor.set(0.5, 0.5);
+
+  floor3 = game.add.sprite(400, 200, 'platform');
+  floor3.width = 300;
+  floor3.height = 40;
+  floor3.anchor.set(0.5, 0.5);
+
+  game.physics.enable(floor1, Phaser.Physics.ARCADE);
+  floor1.body.immovable = true;
+  game.physics.enable(floor2, Phaser.Physics.ARCADE);
+  floor2.body.immovable = true;
+  game.physics.enable(floor3, Phaser.Physics.ARCADE);
+  floor3.body.immovable = true;
+
+  //weapon
+  rifle = game.add.weapon(20, 'bullet');
+  rifle.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
+  rifle.bulletSpeed = 1000;
+  rifle.fireRate = 500;
+  
+  //enemies
+  enemies = game.add.group();
+  enemies.enableBody = true;
+  enemies.physicsBodyType = Phaser.Physics.ARCADE;
+
+  enemies.createMultiple(25, 'man');
+  enemies.setAll('anchor.x', 0.5);
+  enemies.setAll('anchor.y', 0.5);
+  
+  scoreDisplay = game.add.text(
+    game.width/10,    50, '', { font: '30px Arial', fill: '#0079ff', align: 'center' }
+  );
+  
+  gameOverDisplay = game.add.text(
+    270,    game.height/2, '', { font: '30px Arial', fill: '#ff0000', align: 'center' }
+  );
+
+  deadEnemy = game.add.emitter(400, 400, 30);
+  deadEnemy.makeParticles('man', 0, 30, true);
+  deadEnemy.gravity = PLAYER_GRAVITY;
+  
+  emptyShell = game.add.emitter(400, 400, 30);
+  emptyShell.makeParticles('bullet', 0, 30, true);
+  emptyShell.gravity = PLAYER_GRAVITY;
+  
+  floor1.body.velocity.x = FLOOR_SPEED;
+  floor2.body.velocity.x = -FLOOR_SPEED;
+  
+  floor1.body.collideWorldBounds = true;
+  floor2.body.collideWorldBounds = true;
+  player.body.collideWorldBounds = true;
+  
+  hand = game.add.sprite(300, 400, 'pistol');
+  game.physics.enable(hand, Phaser.Physics.ARCADE);
+  hand.anchor.set(-0.1, 0.5);
+  hand.animations.add('shoot', [1,2,0]);
+  hand.animations.add('idle', [0]);
+  hand.animations.play('idle');
+  
+  rifle.onFire.add(
+    function()
+    {
+      var music;
+      music = game.add.audio('pistolFire');
+      music.play();
+      hand.animations.play('shoot', 10);
+      emptyShellEffect(player.body.x + Math.abs(player.width/2) + player.width*6/7, player.body.y);
+    }
+  );
+  
+  debugDisplay = game.add.text(
+    game.width*7/10,    50, '', { font: '30px Arial', fill: '#0079ff', align: 'center' }
+  );
+  
+}
 
 function update()
 {
@@ -257,7 +370,7 @@ function getEnemyLevel()
 {
   for(var i = 0; i < enemy_level_cap.length; i++)
   {
-    if(score >= enemy_level_cap[i])
+    if(score < enemy_level_cap[i])
       return i;
   }
   
@@ -267,10 +380,12 @@ function getEnemyLevel()
 function getEnemySpeed()
 {
   var speed = ENEMY_BASE_SPEED + score/100;
-  if(getEnemyLevel >= 2 )
+  if(getEnemyLevel() >= 1 )
   {
-    speed = ENEMY_BASE_SPEED + parseInt(enemy_level_cap[2])/100;
+    speed = ENEMY_BASE_SPEED + parseInt(enemy_level_cap[0])/100;
   }
+  //test
+  debug(speed);
   return speed;
 }
 
@@ -341,114 +456,6 @@ function emptyShellEffect(x,y)
     emptyShell.start(true, 2000, null, 1);
 }
 
-function recreate()
-{
-  //  Background
-  game.add.tileSprite(0, 0, game.width, game.height, 'gray');
-
-  //player set up
-  player = game.add.sprite(300, 400, 'player');
-  player.anchor.set(0.5,0.5);
-
-  //floor set up
-  floor = game.add.sprite(400,550, 'platform');
-  floor.width = 600;
-  floor.height = 40;
-  floor.anchor.set(0.5,0.5);
-
-  //physics engine
-  game.physics.startSystem(Phaser.Physics.ARCADE);
-  //apply physics to player sprite
-  game.physics.enable(player, Phaser.Physics.ARCADE);
-
-  //physics - gravity
-  player.body.allowGravity = true;
-  player.body.gravity.y = PLAYER_GRAVITY;
-
-  //floor is immovable
-  game.physics.enable(floor, Phaser.Physics.ARCADE);
-  floor.body.immovable = true;
-
-  floor1 = game.add.sprite(150, 350, 'platform');
-  floor1.width = 200;
-  floor1.height = 40;
-  floor1.anchor.set(0.5, 0.5);
-
-  floor2 = game.add.sprite(650, 350, 'platform');
-  floor2.width = 200;
-  floor2.height = 40;
-  floor2.anchor.set(0.5, 0.5);
-
-  floor3 = game.add.sprite(400, 200, 'platform');
-  floor3.width = 300;
-  floor3.height = 40;
-  floor3.anchor.set(0.5, 0.5);
-
-  game.physics.enable(floor1, Phaser.Physics.ARCADE);
-  floor1.body.immovable = true;
-  game.physics.enable(floor2, Phaser.Physics.ARCADE);
-  floor2.body.immovable = true;
-  game.physics.enable(floor3, Phaser.Physics.ARCADE);
-  floor3.body.immovable = true;
-
-  //weapon
-  rifle = game.add.weapon(20, 'bullet');
-  rifle.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
-  rifle.bulletSpeed = 1000;
-  rifle.fireRate = 500;
-  
-  //enemies
-  enemies = game.add.group();
-  enemies.enableBody = true;
-  enemies.physicsBodyType = Phaser.Physics.ARCADE;
-
-  enemies.createMultiple(25, 'man');
-  enemies.setAll('anchor.x', 0.5);
-  enemies.setAll('anchor.y', 0.5);
-  
-  scoreDisplay = game.add.text(
-    game.width/10,    50, '', { font: '30px Arial', fill: '#0079ff', align: 'center' }
-  );
-  
-  gameOverDisplay = game.add.text(
-    270,    game.height/2, '', { font: '30px Arial', fill: '#ff0000', align: 'center' }
-  );
-
-  deadEnemy = game.add.emitter(400, 400, 30);
-  deadEnemy.makeParticles('man', 0, 30, true);
-  deadEnemy.gravity = PLAYER_GRAVITY;
-  
-  emptyShell = game.add.emitter(400, 400, 30);
-  emptyShell.makeParticles('bullet', 0, 30, true);
-  emptyShell.gravity = PLAYER_GRAVITY;
-  
-  floor1.body.velocity.x = FLOOR_SPEED;
-  floor2.body.velocity.x = -FLOOR_SPEED;
-  
-  floor1.body.collideWorldBounds = true;
-  floor2.body.collideWorldBounds = true;
-  player.body.collideWorldBounds = true;
-  
-  hand = game.add.sprite(300, 400, 'pistol');
-  game.physics.enable(hand, Phaser.Physics.ARCADE);
-  hand.anchor.set(-0.1, 0.5);
-  hand.animations.add('shoot', [1,2,0]);
-  hand.animations.add('idle', [0]);
-  hand.animations.play('idle');
-  
-  rifle.onFire.add(
-    function()
-    {
-      var music;
-      music = game.add.audio('pistolFire');
-      music.play();
-      hand.animations.play('shoot', 10);
-      emptyShellEffect(player.body.x + Math.abs(player.width/2) + player.width*6/7, player.body.y);
-    }
-  );
-  
-}
-
 function reinitialize()
 {
   lastSpawnTime = 0;
@@ -467,6 +474,15 @@ function goFull()
           game.scale.startFullScreen(false);
       }
 }
+
+function debug(text)
+{
+  if(text == undefined)
+    debugDisplay.setText('debugging');
+  else
+    debugDisplay.setText(text);
+}
+
 
 
 
