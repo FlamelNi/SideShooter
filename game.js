@@ -12,7 +12,7 @@ var ENEMY_BASE_SPEED = 300;
 var TIME_SCORE_RATE = 2000;
 var FLOOR_SPEED = 100;
 
-var enemy_level_cap = [12000,25000,99999999];
+var enemy_level_cap = [10000,20000,99999999];
 /*
 {
   max speed reached,
@@ -379,10 +379,10 @@ function getEnemyLevel()
 
 function getEnemySpeed()
 {
-  var speed = ENEMY_BASE_SPEED + score/100;
+  var speed = ENEMY_BASE_SPEED + score/80;
   if(getEnemyLevel() >= 1 )
   {
-    speed = ENEMY_BASE_SPEED + parseInt(enemy_level_cap[0])/100;
+    speed = ENEMY_BASE_SPEED + parseInt(enemy_level_cap[0])/80;
   }
   return speed;
 }
