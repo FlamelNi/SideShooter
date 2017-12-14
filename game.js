@@ -11,6 +11,8 @@ var ENEMY_LIFESPAN = 6500;
 var ENEMY_BASE_SPEED = 300;
 var TIME_SCORE_RATE = 2000;
 var FLOOR_SPEED = 100;
+var ENEMY_SHOOT_RATE = 1200;
+var ENEMY_BULLET_SPEED = 600;
 
 var enemy_level_cap = [10000,20000,99999999];
 /*
@@ -26,6 +28,7 @@ var lastSpawnTime = 0;
 var score = 0;
 var lastScoreGiven = 0;
 var enemy_speed = ENEMY_BASE_SPEED;
+var lastEnemyShootTime = 0;
 
 //objects
 var player;
@@ -43,6 +46,7 @@ var deadEnemy;
 var emptyShell;
 var hand;
 var debugDisplay;
+var enemyWeapon;
 
 // load images and resources
 function preload()
@@ -185,6 +189,19 @@ function recreate()
     game.width*7/10,    50, '', { font: '30px Arial', fill: '#ff6b00', align: 'center' }
   );
   
+  enemyWeapon = game.add.weapon(40, 'red');
+  enemyWeapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
+  enemyWeapon.bulletSpeed = ENEMY_BULLET_SPEED;
+  enemyWeapon.fireRate = 0;
+  enemyWeapon.onFire.add(
+    function()
+    {
+      // var music;
+      // music = game.add.audio('pistolFire');
+      // music.play();
+    }
+  );
+  
 }
 
 function update()
@@ -247,6 +264,25 @@ function update()
   //'for each enemy that currently is objectified'
   //as a parameter 
   enemies.forEachExists(enemyMove, this);
+  if( game.time.now >= (lastEnemyShootTime + ENEMY_SHOOT_RATE) &&
+      getEnemyLevel() >= 1 )
+  {
+    enemies.forEachExists(
+      function(enemy)
+      {
+        enemyWeapon.trackSprite(enemy);
+        if(enemy.width > 0)
+        {
+          enemyWeapon.fireAngle = 0;
+        }
+        else
+        {
+          enemyWeapon.fireAngle = 180;
+        }
+        enemyWeapon.fire();
+      }, this);
+    lastEnemyShootTime = game.time.now;
+  }
   
   addScore();
   
@@ -255,13 +291,15 @@ function update()
   deadEnemy.bounce.setTo(0.5,1);
 
   
-  if(game.physics.arcade.collide(enemies, player))
+  if( game.physics.arcade.collide(enemies, player) ||
+      game.physics.arcade.collide(enemyWeapon.bullets, player) )
   {
     //gameover
     player.kill();
     enemies.killAll();
     rifle.killAll();
     hand.kill();
+    enemyWeapon.bullets.killAll();
     stop = true;
     
   }
@@ -379,10 +417,10 @@ function getEnemyLevel()
 
 function getEnemySpeed()
 {
-  var speed = ENEMY_BASE_SPEED + score/80;
+  var speed = ENEMY_BASE_SPEED + score/60;
   if(getEnemyLevel() >= 1 )
   {
-    speed = ENEMY_BASE_SPEED + parseInt(enemy_level_cap[0])/80;
+    speed = ENEMY_BASE_SPEED + parseInt(enemy_level_cap[0])/60;
   }
   return speed;
 }
@@ -461,6 +499,7 @@ function reinitialize()
   lastScoreGiven = game.time.now;
   enemy_speed = ENEMY_BASE_SPEED;
   stop = false;
+  lastEnemyShootTime = 0;
 }
 
 function goFull()
