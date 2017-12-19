@@ -13,6 +13,7 @@ var TIME_SCORE_RATE = 2000;
 var FLOOR_SPEED = 100;
 var ENEMY_SHOOT_RATE = 1200;
 var ENEMY_BULLET_SPEED = 600;
+var HARD_ENEMY_SPEED = 520;
 
 var enemy_level_cap = [10000,20000,99999999];
 /*
@@ -43,6 +44,7 @@ var scoreDisplay;
 var gameOverDisplay;
 var stop = false;
 var deadEnemy;
+var deadHardEnemy;
 var emptyShell;
 var hand;
 var debugDisplay;
@@ -52,9 +54,10 @@ var enemyWeapon;
 function preload()
 {
 
-  game.load.image('gray',              'asset/gray.jpg');
-  game.load.image('platform',          'asset/platform.jpg');
-  game.load.image('man',               'asset/man.gif');
+  game.load.image('gray',             'asset/gray.jpg');
+  game.load.image('platform',         'asset/platform.jpg');
+  game.load.image('man',              'asset/man.gif');
+  game.load.image('redMan',           'asset/redMan.gif');
   game.load.image('player',           'asset/capMan.png');
   game.load.image('red',              'asset/red.png');
   game.load.image('yellow',           'asset/particleYellow.png');
@@ -155,6 +158,10 @@ function recreate()
   deadEnemy = game.add.emitter(400, 400, 30);
   deadEnemy.makeParticles('man', 0, 30, true);
   deadEnemy.gravity = PLAYER_GRAVITY;
+  
+  deadHardEnemy = game.add.emitter(400, 400, 30);
+  deadHardEnemy.makeParticles('redMan', 0, 30, true);
+  deadHardEnemy.gravity = PLAYER_GRAVITY;
   
   emptyShell = game.add.emitter(400, 400, 30);
   emptyShell.makeParticles('bullet', 0, 30, true);
@@ -324,8 +331,6 @@ function speedLimit()
 
 function spawnEnemy()
 {
-  
-
   //if game waited ENEMY_SPAWN_RATE amount since last spawn
   if( game.time.now >= (lastSpawnTime + ENEMY_SPAWN_RATE) )
   {
@@ -339,6 +344,7 @@ function spawnEnemy()
     if (enemy)
     {
       enemy.reset(400, 120);//set position
+      enemy.loadTexture('man');
       enemy.lifespan = ENEMY_LIFESPAN;//how long enemy lasts
       game.physics.enable(enemy, Phaser.Physics.ARCADE);
       enemy.body.allowGravity = true;
@@ -349,6 +355,24 @@ function spawnEnemy()
     
   }//if gametime
   
+}
+
+function hardEnemySpawn()
+{
+  var enemy = enemies.getFirstExists(false);
+
+  //if 'enemy' exists (enemies have at least one un-objectified element)
+  if (enemy)
+  {
+    enemy.reset(400, 120);//set position
+    enemy.loadTexture('redMan');
+    enemy.lifespan = ENEMY_LIFESPAN;//how long enemy lasts
+    game.physics.enable(enemy, Phaser.Physics.ARCADE);
+    enemy.body.allowGravity = true;
+    enemy.body.gravity.y = PLAYER_GRAVITY;
+    enemy.width = enemy.width * (Math.floor(Math.random()*1000%2)*2-1);
+    enemy.body.collideWorldBounds = true;//does enemy collided with world bound
+  }//if enemy
 }
 
 function enemiesMove()
@@ -407,22 +431,40 @@ function getEnemySpeed()
 
 function enemyMove(enemy)
 {
+  
   if(enemy.body.onWall())
   {
     enemy.width = -enemy.width;
   }
-  if(enemy.width > 0)
+  if(enemy.key == 'redMan')
   {
-    // enemy.body.velocity.x =  ENEMY_BASE_SPEED;
-    enemy.body.velocity.x = enemy_speed;
+    if(enemy.width > 0)
+    {
+      enemy.body.velocity.x = HARD_ENEMY_SPEED;
+    }
+    else
+    {
+      enemy.body.velocity.x = -HARD_ENEMY_SPEED;
+    }
   }
   else
   {
-    // enemy.body.velocity.x = -ENEMY_BASE_SPEED;
-    enemy.body.velocity.x = -enemy_speed;
-
+    if(enemy.width > 0)
+    {
+      enemy.body.velocity.x = enemy_speed;
+    }
+    else
+    {
+      enemy.body.velocity.x = -enemy_speed;
+    }
   }
   rifle.bullets.forEachExists(bulletHitEnemy, this, enemy);
+  
+  if(enemy.body.y >= 550)
+  {
+    hardEnemySpawn();
+    enemy.kill();
+  }
 
 }
 
@@ -430,8 +472,11 @@ function bulletHitEnemy(bullet, enemy)
 {
   if(game.physics.arcade.collide(enemy, bullet))
   {
-    
-    deadEnemyEffect(enemy.body.x, enemy.body.y);
+    if(enemy.key == 'redMan')
+      deadHardEnemyEffect(enemy.body.x, enemy.body.y);
+    else
+      deadEnemyEffect(enemy.body.x, enemy.body.y);
+
     bullet.kill();
     enemy.kill();
     score = score + 500;
@@ -476,6 +521,15 @@ function deadEnemyEffect(x,y)
     //  The final parameter (10) is how many particles will be emitted in this single burst
     deadEnemy.setYSpeed(-400, -600);
     deadEnemy.start(true, 2000, null, 1);
+}
+
+function deadHardEnemyEffect(x,y)
+{
+    deadHardEnemy.x = x
+    deadHardEnemy.y = y;
+    
+    deadHardEnemy.setYSpeed(-400, -600);
+    deadHardEnemy.start(true, 2000, null, 1);
 }
 
 function emptyShellEffect(x,y)
