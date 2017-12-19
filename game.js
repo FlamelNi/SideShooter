@@ -235,8 +235,27 @@ function update()
   // function for player movement
   movePlayer();
 
-
   //weapon
+  playerWeapon();
+  
+  spawnEnemy();
+
+  enemiesMove();
+  
+  addScore();
+  
+  scoreDisplay.setText('Score: ' + score.toString());
+
+  checkGameOver();
+  
+  updateEffects();
+  
+  updateFloor();
+
+}//update
+
+function playerWeapon()
+{
   if(game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR))
   {
     rifle.trackSprite(player, player.width, -10);
@@ -250,78 +269,7 @@ function update()
     }
     rifle.fire();
   }//if
-
-  
-  spawnEnemy();
-
-  //collide not only work with sprites but also group of sprites
-  game.physics.arcade.collide(enemies, floor);
-  game.physics.arcade.collide(enemies, floor1);
-  game.physics.arcade.collide(enemies, floor2);
-  game.physics.arcade.collide(enemies, floor3);
-
-  //run function called 'enemyMove' and put 
-  //'for each enemy that currently is objectified'
-  //as a parameter 
-  enemies.forEachExists(enemyMove, this);
-  if( game.time.now >= (lastEnemyShootTime + ENEMY_SHOOT_RATE) &&
-      getEnemyLevel() >= 1 )
-  {
-    enemies.forEachExists(
-      function(enemy)
-      {
-        enemyWeapon.trackSprite(enemy);
-        if(enemy.width > 0)
-        {
-          enemyWeapon.fireAngle = 0;
-        }
-        else
-        {
-          enemyWeapon.fireAngle = 180;
-        }
-        enemyWeapon.fire();
-      }, this);
-    lastEnemyShootTime = game.time.now;
-  }
-  
-  addScore();
-  
-  scoreDisplay.setText('Score: ' + score.toString());
-
-  deadEnemy.bounce.setTo(0.5,1);
-
-  
-  if( game.physics.arcade.collide(enemies, player) ||
-      game.physics.arcade.collide(enemyWeapon.bullets, player) )
-  {
-    //gameover
-    player.kill();
-    enemies.killAll();
-    rifle.killAll();
-    hand.kill();
-    enemyWeapon.bullets.killAll();
-    stop = true;
-    
-  }
-
-  game.physics.arcade.collide(emptyShell, floor);
-  game.physics.arcade.collide(emptyShell, floor1);
-  game.physics.arcade.collide(emptyShell, floor2);
-  game.physics.arcade.collide(emptyShell, floor3);
-
-  if(game.physics.arcade.collide(floor1, floor2))
-  {
-    floor1.body.velocity.x = -FLOOR_SPEED;
-    floor2.body.velocity.x = FLOOR_SPEED;
-  }
-  
-  if(floor1.body.onWall() || floor2.body.onWall())
-  {
-    floor1.body.velocity.x = FLOOR_SPEED;
-    floor2.body.velocity.x = -FLOOR_SPEED;
-  }
-
-}//update
+}
 
 function movePlayer()
 {
@@ -403,6 +351,38 @@ function spawnEnemy()
   
 }
 
+function enemiesMove()
+{
+  //collide not only work with sprites but also group of sprites
+  game.physics.arcade.collide(enemies, floor);
+  game.physics.arcade.collide(enemies, floor1);
+  game.physics.arcade.collide(enemies, floor2);
+  game.physics.arcade.collide(enemies, floor3);
+
+  //run function called 'enemyMove' and put 
+  //'for each enemy that currently is objectified'
+  //as a parameter 
+  enemies.forEachExists(enemyMove, this);
+  if( game.time.now >= (lastEnemyShootTime + ENEMY_SHOOT_RATE) &&
+      getEnemyLevel() >= 1 )
+  {
+    enemies.forEachExists(
+      function(enemy)
+      {
+        enemyWeapon.trackSprite(enemy);
+        if(enemy.width > 0)
+        {
+          enemyWeapon.fireAngle = 0;
+        }
+        else
+        {
+          enemyWeapon.fireAngle = 180;
+        }
+        enemyWeapon.fire();
+      }, this);
+    lastEnemyShootTime = game.time.now;
+  }
+}
 
 function getEnemyLevel()
 {
@@ -450,7 +430,7 @@ function bulletHitEnemy(bullet, enemy)
 {
   if(game.physics.arcade.collide(enemy, bullet))
   {
-
+    
     deadEnemyEffect(enemy.body.x, enemy.body.y);
     bullet.kill();
     enemy.kill();
@@ -469,6 +449,21 @@ function addScore()
   }
 }
 
+function checkGameOver()
+{
+  if( game.physics.arcade.collide(enemies, player) ||
+      game.physics.arcade.collide(enemyWeapon.bullets, player) )
+  {
+    //gameover
+    player.kill();
+    enemies.killAll();
+    rifle.killAll();
+    hand.kill();
+    enemyWeapon.bullets.killAll();
+    stop = true;
+    
+  }
+}
 
 function deadEnemyEffect(x,y)
 {
@@ -492,6 +487,29 @@ function emptyShellEffect(x,y)
     emptyShell.start(true, 2000, null, 1);
 }
 
+function updateEffects()
+{
+  game.physics.arcade.collide(emptyShell, floor);
+  game.physics.arcade.collide(emptyShell, floor1);
+  game.physics.arcade.collide(emptyShell, floor2);
+  game.physics.arcade.collide(emptyShell, floor3);
+}
+
+function updateFloor()
+{
+  if(game.physics.arcade.collide(floor1, floor2))
+  {
+    floor1.body.velocity.x = -FLOOR_SPEED;
+    floor2.body.velocity.x = FLOOR_SPEED;
+  }
+  
+  if(floor1.body.onWall() || floor2.body.onWall())
+  {
+    floor1.body.velocity.x = FLOOR_SPEED;
+    floor2.body.velocity.x = -FLOOR_SPEED;
+  }
+}
+
 function reinitialize()
 {
   lastSpawnTime = 0;
@@ -500,6 +518,7 @@ function reinitialize()
   enemy_speed = ENEMY_BASE_SPEED;
   stop = false;
   lastEnemyShootTime = 0;
+  deadEnemy.bounce.setTo(0.5,1);
 }
 
 function goFull()
