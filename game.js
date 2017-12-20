@@ -15,6 +15,11 @@ var ENEMY_SHOOT_RATE = 1200;
 var ENEMY_BULLET_SPEED = 600;
 var HARD_ENEMY_SPEED = 520;
 
+//weapon constants
+var BULLET_SPEED = 1000;
+var PISTOL_FIRE_RATE = 500;
+var RIFLE_FIRE_RATE = 200;
+
 var enemy_level_cap = [10000,20000,99999999];
 /*
 {
@@ -38,7 +43,7 @@ var floor;
 var floor1;
 var floor2;
 var floor3;
-var rifle;
+var playerWeapon;
 var enemies;
 var scoreDisplay;
 var gameOverDisplay;
@@ -64,6 +69,7 @@ function preload()
   game.load.image('bullet',           'asset/bullet.png');
   
   game.load.spritesheet('pistol',     'asset/pistolHand.png', 46, 47);
+  game.load.spritesheet('rifle',      'asset/rifleHand.png', 73, 47);
   
   game.load.audio('pistolFire',       'asset/pulseGun.ogg');
 }
@@ -74,9 +80,6 @@ function create()
   this.game.scale.fullScreenScaleMode = Phaser.ScaleManager.SHOW_ALL;
   var enterKey = game.input.keyboard.addKey(Phaser.Keyboard.ENTER);
   enterKey.onDown.add(goFull, this);
-  
-  // game.renderer.clearBeforeRender = false;
-  // game.renderer.roundPixels = true;
   
   recreate();
   reinitialize();
@@ -131,12 +134,6 @@ function recreate()
   floor2.body.immovable = true;
   game.physics.enable(floor3, Phaser.Physics.ARCADE);
   floor3.body.immovable = true;
-
-  //weapon
-  rifle = game.add.weapon(20, 'bullet');
-  rifle.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
-  rifle.bulletSpeed = 1000;
-  rifle.fireRate = 500;
   
   //enemies
   enemies = game.add.group();
@@ -174,23 +171,7 @@ function recreate()
   floor2.body.collideWorldBounds = true;
   player.body.collideWorldBounds = true;
   
-  hand = game.add.sprite(300, 400, 'pistol');
-  game.physics.enable(hand, Phaser.Physics.ARCADE);
-  hand.anchor.set(-0.1, 0.5);
-  hand.animations.add('shoot', [1,2,0]);
-  hand.animations.add('idle', [0]);
-  hand.animations.play('idle');
-  
-  rifle.onFire.add(
-    function()
-    {
-      var music;
-      music = game.add.audio('pistolFire');
-      music.play();
-      hand.animations.play('shoot', 10);
-      emptyShellEffect(player.body.x + Math.abs(player.width/2) + player.width*6/7, player.body.y);
-    }
-  );
+  pistolSetup();
   
   debugDisplay = game.add.text(
     game.width*7/10,    50, '', { font: '30px Arial', fill: '#ff6b00', align: 'center' }
@@ -243,7 +224,7 @@ function update()
   movePlayer();
 
   //weapon
-  playerWeapon();
+  updatePlayerWeapon();
   
   spawnEnemy();
 
@@ -261,20 +242,20 @@ function update()
 
 }//update
 
-function playerWeapon()
+function updatePlayerWeapon()
 {
   if(game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR))
   {
-    rifle.trackSprite(player, player.width, -10);
+    playerWeapon.trackSprite(player, hand.width, -10);
     if(player.width > 0)
     {
-      rifle.fireAngle = 0;
+      playerWeapon.fireAngle = 0;
     }
     else
     {
-      rifle.fireAngle = 180;
+      playerWeapon.fireAngle = 180;
     }
-    rifle.fire();
+    playerWeapon.fire();
   }//if
 }
 
@@ -458,7 +439,7 @@ function enemyMove(enemy)
       enemy.body.velocity.x = -enemy_speed;
     }
   }
-  rifle.bullets.forEachExists(bulletHitEnemy, this, enemy);
+  playerWeapon.bullets.forEachExists(bulletHitEnemy, this, enemy);
   
   if(enemy.body.y >= 550)
   {
@@ -502,7 +483,7 @@ function checkGameOver()
     //gameover
     player.kill();
     enemies.killAll();
-    rifle.killAll();
+    playerWeapon.killAll();
     hand.kill();
     enemyWeapon.bullets.killAll();
     stop = true;
@@ -562,6 +543,60 @@ function updateFloor()
     floor1.body.velocity.x = FLOOR_SPEED;
     floor2.body.velocity.x = -FLOOR_SPEED;
   }
+}
+
+function rifleSetup()
+{
+  hand = game.add.sprite(300, 400, 'rifle');
+  game.physics.enable(hand, Phaser.Physics.ARCADE);
+  hand.anchor.set(0.15, 0.4);
+  hand.animations.add('shoot', [1,2,0]);
+  hand.animations.add('idle', [0]);
+  hand.animations.play('idle');
+  
+  //weapon
+  playerWeapon = game.add.weapon(20, 'bullet');
+  playerWeapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
+  playerWeapon.bulletSpeed = BULLET_SPEED;
+  playerWeapon.fireRate = RIFLE_FIRE_RATE;
+  
+  playerWeapon.onFire.add(
+    function()
+    {
+      var music;
+      music = game.add.audio('pistolFire');
+      music.play();
+      hand.animations.play('shoot', 10);
+      emptyShellEffect(player.body.x + Math.abs(player.width/2) + player.width*6/7, player.body.y);
+    }
+  );
+}
+
+function pistolSetup()
+{
+  hand = game.add.sprite(300, 400, 'pistol');
+  game.physics.enable(hand, Phaser.Physics.ARCADE);
+  hand.anchor.set(-0.1, 0.5);
+  hand.animations.add('shoot', [1,2,0]);
+  hand.animations.add('idle', [0]);
+  hand.animations.play('idle');
+  
+  //weapon
+  playerWeapon = game.add.weapon(20, 'bullet');
+  playerWeapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
+  playerWeapon.bulletSpeed = BULLET_SPEED;
+  playerWeapon.fireRate = PISTOL_FIRE_RATE;
+  
+  playerWeapon.onFire.add(
+    function()
+    {
+      var music;
+      music = game.add.audio('pistolFire');
+      music.play();
+      hand.animations.play('shoot', 10);
+      emptyShellEffect(player.body.x + Math.abs(player.width/2) + player.width*6/7, player.body.y);
+    }
+  );
 }
 
 function reinitialize()
