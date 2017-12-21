@@ -14,6 +14,7 @@ var FLOOR_SPEED = 100;
 var ENEMY_SHOOT_RATE = 1200;
 var ENEMY_BULLET_SPEED = 600;
 var HARD_ENEMY_SPEED = 520;
+var WEAPON_BOX_SPAWN_RATE = 0.20;//probability
 
 //weapon constants
 var BULLET_SPEED = 1000;
@@ -35,6 +36,7 @@ var score = 0;
 var lastScoreGiven = 0;
 var enemy_speed = ENEMY_BASE_SPEED;
 var lastEnemyShootTime = 0;
+var ammo = 0;
 
 //objects
 var player;
@@ -53,7 +55,9 @@ var deadHardEnemy;
 var emptyShell;
 var hand;
 var debugDisplay;
+var ammoDisplay;
 var enemyWeapon;
+var weaponBox;
 
 // load images and resources
 function preload()
@@ -68,6 +72,7 @@ function preload()
   game.load.image('yellow',           'asset/particleYellow.png');
   game.load.image('bullet',           'asset/bullet.png');
   
+  game.load.spritesheet('weaponBox',  'asset/weaponBox.png', 13, 13);
   game.load.spritesheet('pistol',     'asset/pistolHand.png', 46, 47);
   game.load.spritesheet('rifle',      'asset/rifleHand.png', 73, 47);
   
@@ -148,6 +153,10 @@ function recreate()
     game.width/10,    50, '', { font: '30px Arial', fill: '#0079ff', align: 'center' }
   );
   
+  ammoDisplay = game.add.text(
+    game.width*8/10,    50, '', { font: '30px Arial', fill: '#ff8200', align: 'center' }
+  );
+  
   gameOverDisplay = game.add.text(
     270,    game.height/2, '', { font: '30px Arial', fill: '#ff0000', align: 'center' }
   );
@@ -174,7 +183,7 @@ function recreate()
   pistolSetup();
   
   debugDisplay = game.add.text(
-    game.width*7/10,    50, '', { font: '30px Arial', fill: '#ff6b00', align: 'center' }
+    game.width*7/10,    100, '', { font: '30px Arial', fill: '#ff6b00', align: 'center' }
   );
   
   enemyWeapon = game.add.weapon(40, 'red');
@@ -233,6 +242,10 @@ function update()
   addScore();
   
   scoreDisplay.setText('Score: ' + score.toString());
+  
+  ammoDisplay.setText('Ammo: ' + ammo.toString());
+  
+  updateWeaponBox();
 
   checkGameOver();
   
@@ -461,6 +474,10 @@ function bulletHitEnemy(bullet, enemy)
     bullet.kill();
     enemy.kill();
     score = score + 500;
+    if(Math.random() <= WEAPON_BOX_SPAWN_RATE)
+    {
+      spawnWeaponBox();
+    }
     enemy_speed = getEnemySpeed();
   }
 }
@@ -486,6 +503,7 @@ function checkGameOver()
     playerWeapon.killAll();
     hand.kill();
     enemyWeapon.bullets.killAll();
+    weaponBox.kill();
     stop = true;
     
   }
@@ -547,6 +565,9 @@ function updateFloor()
 
 function rifleSetup()
 {
+  if(hand != null)
+    hand.kill();
+  
   hand = game.add.sprite(300, 400, 'rifle');
   game.physics.enable(hand, Phaser.Physics.ARCADE);
   hand.anchor.set(0.15, 0.4);
@@ -554,11 +575,18 @@ function rifleSetup()
   hand.animations.add('idle', [0]);
   hand.animations.play('idle');
   
+  if(player.width > 0)
+    hand.width = Math.abs(hand.width);
+  else
+    hand.width = -Math.abs(hand.width);
+  
   //weapon
   playerWeapon = game.add.weapon(20, 'bullet');
   playerWeapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
   playerWeapon.bulletSpeed = BULLET_SPEED;
   playerWeapon.fireRate = RIFLE_FIRE_RATE;
+  
+  ammo = 20;
   
   playerWeapon.onFire.add(
     function()
@@ -568,18 +596,29 @@ function rifleSetup()
       music.play();
       hand.animations.play('shoot', 10);
       emptyShellEffect(player.body.x + Math.abs(player.width/2) + player.width*6/7, player.body.y);
+      ammo--;
+      if(ammo <= 0)
+        pistolSetup();
     }
   );
 }
 
 function pistolSetup()
 {
+  if(hand != null)
+    hand.kill();
+  
   hand = game.add.sprite(300, 400, 'pistol');
   game.physics.enable(hand, Phaser.Physics.ARCADE);
   hand.anchor.set(-0.1, 0.5);
   hand.animations.add('shoot', [1,2,0]);
   hand.animations.add('idle', [0]);
   hand.animations.play('idle');
+  
+  if(player.width > 0)
+    hand.width = Math.abs(hand.width);
+  else
+    hand.width = -Math.abs(hand.width);
   
   //weapon
   playerWeapon = game.add.weapon(20, 'bullet');
@@ -599,6 +638,42 @@ function pistolSetup()
   );
 }
 
+function spawnWeaponBox()
+{
+  if(weaponBox != null)
+  {
+    weaponBox.kill();
+  }
+  var x = ( (Math.random()*10000)%600 )+100;
+  var y = ( (Math.random()*10000)%250 )+230;
+  weaponBox = game.add.sprite(x, y, 'weaponBox');
+  weaponBox.width = 26;
+  weaponBox.height = 24;
+  
+  game.physics.enable(weaponBox, Phaser.Physics.ARCADE);
+  weaponBox.anchor.set(0.5, 0.5);
+  weaponBox.animations.add('idle', [0, 1, 2, 3], 2, true);
+  weaponBox.animations.play('idle');
+}
+
+function updateWeaponBox()
+{
+  
+  if(game.physics.arcade.collide(player, weaponBox))
+  {
+    var numOfWeapons = 1;
+    var probability = 1/numOfWeapons;
+    var chance = Math.random();
+    
+    if(chance <= probability)
+    {
+      rifleSetup();
+    }
+    
+    weaponBox.kill();
+  }
+}
+
 function reinitialize()
 {
   lastSpawnTime = 0;
@@ -607,6 +682,7 @@ function reinitialize()
   enemy_speed = ENEMY_BASE_SPEED;
   stop = false;
   lastEnemyShootTime = 0;
+  ammo = 0;
   deadEnemy.bounce.setTo(0.5,1);
 }
 
