@@ -20,6 +20,7 @@ var WEAPON_BOX_SPAWN_RATE = 0.20;//probability
 var BULLET_SPEED = 1000;
 var PISTOL_FIRE_RATE = 500;
 var RIFLE_FIRE_RATE = 200;
+var SHOTGUN_FIRE_RATE = 500;
 
 var enemy_level_cap = [10000,20000,99999999];
 /*
@@ -38,6 +39,9 @@ var enemy_speed = ENEMY_BASE_SPEED;
 var lastEnemyShootTime = 0;
 var ammo = 0;
 
+//function
+var onWeaponFire;
+
 //objects
 var player;
 var playerHand;
@@ -53,6 +57,7 @@ var stop = false;
 var deadEnemy;
 var deadHardEnemy;
 var emptyShell;
+var emptyShotShell;
 var hand;
 var debugDisplay;
 var ammoDisplay;
@@ -71,10 +76,12 @@ function preload()
   game.load.image('red',              'asset/red.png');
   game.load.image('yellow',           'asset/particleYellow.png');
   game.load.image('bullet',           'asset/bullet.png');
+  game.load.image('shell',            'asset/shell.png');
   
   game.load.spritesheet('weaponBox',  'asset/weaponBox.png', 13, 13);
   game.load.spritesheet('pistol',     'asset/pistolHand.png', 46, 47);
   game.load.spritesheet('rifle',      'asset/rifleHand.png', 73, 47);
+  game.load.spritesheet('shotgun',    'asset/shotgunHand.png', 80, 47);
   
   game.load.audio('pistolFire',       'asset/pulseGun.ogg');
 }
@@ -173,6 +180,10 @@ function recreate()
   emptyShell.makeParticles('bullet', 0, 30, true);
   emptyShell.gravity = PLAYER_GRAVITY;
   
+  emptyShotShell = game.add.emitter(400, 400, 30);
+  emptyShotShell.makeParticles('shell', 0, 30, true);
+  emptyShotShell.gravity = PLAYER_GRAVITY;
+  
   floor1.body.velocity.x = FLOOR_SPEED;
   floor2.body.velocity.x = -FLOOR_SPEED;
   
@@ -268,7 +279,10 @@ function updatePlayerWeapon()
     {
       playerWeapon.fireAngle = 180;
     }
-    playerWeapon.fire();
+    if(playerWeapon.fire())
+    {
+      onWeaponFire();
+    }
   }//if
 }
 
@@ -503,7 +517,8 @@ function checkGameOver()
     playerWeapon.killAll();
     hand.kill();
     enemyWeapon.bullets.killAll();
-    weaponBox.kill();
+    if(weaponBox != null)
+      weaponBox.kill();
     stop = true;
     
   }
@@ -540,12 +555,26 @@ function emptyShellEffect(x,y)
     emptyShell.start(true, 2000, null, 1);
 }
 
+function emptyShotShellEffect(x,y)
+{
+    emptyShotShell.x = x
+    emptyShotShell.y = y;
+    
+    emptyShotShell.setYSpeed(-400, -600);
+    emptyShotShell.start(true, 2000, null, 1);
+}
+
 function updateEffects()
 {
   game.physics.arcade.collide(emptyShell, floor);
   game.physics.arcade.collide(emptyShell, floor1);
   game.physics.arcade.collide(emptyShell, floor2);
   game.physics.arcade.collide(emptyShell, floor3);
+  
+  game.physics.arcade.collide(emptyShotShell, floor);
+  game.physics.arcade.collide(emptyShotShell, floor1);
+  game.physics.arcade.collide(emptyShotShell, floor2);
+  game.physics.arcade.collide(emptyShotShell, floor3);
 }
 
 function updateFloor()
@@ -586,21 +615,65 @@ function rifleSetup()
   playerWeapon.bulletSpeed = BULLET_SPEED;
   playerWeapon.fireRate = RIFLE_FIRE_RATE;
   
-  ammo = 20;
+  ammo = 15;
   
-  playerWeapon.onFire.add(
-    function()
-    {
-      var music;
-      music = game.add.audio('pistolFire');
-      music.play();
-      hand.animations.play('shoot', 10);
-      emptyShellEffect(player.body.x + Math.abs(player.width/2) + player.width*6/7, player.body.y);
-      ammo--;
-      if(ammo <= 0)
-        pistolSetup();
-    }
-  );
+  onWeaponFire = function()
+  {
+    var music;
+    music = game.add.audio('pistolFire');
+    music.play();
+    hand.animations.play('shoot', 10);
+    emptyShellEffect(player.body.x + Math.abs(player.width/2) + player.width*6/7, player.body.y);
+    ammo--;
+    if(ammo <= 0)
+      pistolSetup();
+  }
+}
+
+function shotgunSetup()
+{
+  if(hand != null)
+    hand.kill();
+  
+  hand = game.add.sprite(300, 400, 'shotgun');
+  game.physics.enable(hand, Phaser.Physics.ARCADE);
+  hand.anchor.set(0.15, 0.4);
+  hand.animations.add('shoot', [1,2,0]);
+  hand.animations.add('idle', [0]);
+  hand.animations.play('idle');
+  
+  if(player.width > 0)
+    hand.width = Math.abs(hand.width);
+  else
+    hand.width = -Math.abs(hand.width);
+  
+  //weapon
+  playerWeapon = game.add.weapon(20, 'bullet');
+  playerWeapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
+  playerWeapon.bulletSpeed = BULLET_SPEED;
+  playerWeapon.fireRate = 0;
+  playerWeapon.bulletAngleVariance = 20;
+  
+  ammo = 8;
+  
+  onWeaponFire = function()
+  {
+    playerWeapon.fire();
+    playerWeapon.fire();
+    playerWeapon.fire();
+    playerWeapon.fireRate = SHOTGUN_FIRE_RATE;
+    playerWeapon.fire();
+    playerWeapon.fireRate = 0;
+    
+    var music;
+    music = game.add.audio('pistolFire');
+    music.play();
+    hand.animations.play('shoot', 10);
+    emptyShotShellEffect(player.body.x + Math.abs(player.width/2) + player.width*6/7, player.body.y);
+    ammo--;
+    if(ammo <= 0)
+      pistolSetup();
+  }
 }
 
 function pistolSetup()
@@ -626,16 +699,16 @@ function pistolSetup()
   playerWeapon.bulletSpeed = BULLET_SPEED;
   playerWeapon.fireRate = PISTOL_FIRE_RATE;
   
-  playerWeapon.onFire.add(
-    function()
-    {
-      var music;
-      music = game.add.audio('pistolFire');
-      music.play();
-      hand.animations.play('shoot', 10);
-      emptyShellEffect(player.body.x + Math.abs(player.width/2) + player.width*6/7, player.body.y);
-    }
-  );
+  
+  onWeaponFire = function()
+  {
+    var music;
+    music = game.add.audio('pistolFire');
+    music.play();
+    hand.animations.play('shoot', 10);
+    emptyShellEffect(player.body.x + Math.abs(player.width/2) + player.width*6/7, player.body.y);
+  }
+  
 }
 
 function spawnWeaponBox()
@@ -661,13 +734,17 @@ function updateWeaponBox()
   
   if(game.physics.arcade.collide(player, weaponBox))
   {
-    var numOfWeapons = 1;
+    var numOfWeapons = 2;
     var probability = 1/numOfWeapons;
     var chance = Math.random();
     
-    if(chance <= probability)
+    if(chance <= probability*1)
     {
       rifleSetup();
+    }
+    else if(chance <= probability*2)
+    {
+      shotgunSetup();
     }
     
     weaponBox.kill();
