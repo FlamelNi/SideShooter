@@ -83,7 +83,11 @@ function preload()
   game.load.spritesheet('rifle',      'asset/rifleHand.png', 73, 47);
   game.load.spritesheet('shotgun',    'asset/shotgunHand.png', 80, 47);
   
-  game.load.audio('pistolFire',       'asset/pulseGun.ogg');
+  game.load.audio('enemyFire',       'asset/pulseGun.ogg');
+  game.load.audio('pistolFire',       'asset/pistolFire.wav');
+  game.load.audio('rifleFire',        'asset/rifleFire.wav');
+  game.load.audio('shotgunFire',      'asset/shotgunFire.wav');
+  game.load.audio('reload',           'asset/reload.wav');
 }
 
 function create()
@@ -398,6 +402,10 @@ function enemiesMove()
   if( game.time.now >= (lastEnemyShootTime + ENEMY_SHOOT_RATE) &&
       getEnemyLevel() >= 1 )
   {
+    var music;
+    music = game.add.audio('enemyFire');
+    music.play();
+    
     enemies.forEachExists(
       function(enemy)
       {
@@ -490,7 +498,7 @@ function bulletHitEnemy(bullet, enemy)
     score = score + 500;
     if(Math.random() <= WEAPON_BOX_SPAWN_RATE)
     {
-      spawnWeaponBox();
+      spawnWeaponBox(bullet.x, bullet.y);
     }
     enemy_speed = getEnemySpeed();
   }
@@ -620,7 +628,7 @@ function rifleSetup()
   onWeaponFire = function()
   {
     var music;
-    music = game.add.audio('pistolFire');
+    music = game.add.audio('rifleFire');
     music.play();
     hand.animations.play('shoot', 10);
     emptyShellEffect(player.body.x + Math.abs(player.width/2) + player.width*6/7, player.body.y);
@@ -666,7 +674,7 @@ function shotgunSetup()
     playerWeapon.fireRate = 0;
     
     var music;
-    music = game.add.audio('pistolFire');
+    music = game.add.audio('shotgunFire');
     music.play();
     hand.animations.play('shoot', 10);
     emptyShotShellEffect(player.body.x + Math.abs(player.width/2) + player.width*6/7, player.body.y);
@@ -711,14 +719,14 @@ function pistolSetup()
   
 }
 
-function spawnWeaponBox()
+function spawnWeaponBox(x, y)
 {
   if(weaponBox != null)
   {
     weaponBox.kill();
   }
-  var x = ( (Math.random()*10000)%600 )+100;
-  var y = ( (Math.random()*10000)%250 )+230;
+  // var x = ( (Math.random()*10000)%600 )+100;
+  // var y = ( (Math.random()*10000)%250 )+230;
   weaponBox = game.add.sprite(x, y, 'weaponBox');
   weaponBox.width = 26;
   weaponBox.height = 24;
@@ -734,6 +742,9 @@ function updateWeaponBox()
   
   if(game.physics.arcade.collide(player, weaponBox))
   {
+    var music;
+    music = game.add.audio('reload');
+    music.play();
     var numOfWeapons = 2;
     var probability = 1/numOfWeapons;
     var chance = Math.random();
