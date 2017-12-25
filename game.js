@@ -44,7 +44,6 @@ var onWeaponFire;
 
 //objects
 var player;
-var playerHand;
 var floor;
 var floor1;
 var floor2;
@@ -188,7 +187,7 @@ function create()
   floor1.body.collideWorldBounds = true;
   floor2.body.collideWorldBounds = true;
   player.body.collideWorldBounds = true;
-  
+
   pistolSetup();
   
   debugDisplay = game.add.text(
@@ -213,15 +212,24 @@ function create()
 
 function reset()
 {
-  player.body.x = 300;
-  player.body.y = 400;
+  player = game.add.sprite(300, 400, 'player');
+  player.anchor.set(0.5,0.5);
   
-  floor1.body.x = 150;
-  floor2.body.x = 650;
+  game.physics.enable(player, Phaser.Physics.ARCADE);
+
+  player.body.allowGravity = true;
+  player.body.gravity.y = PLAYER_GRAVITY;
+  
+  player.body.collideWorldBounds = true;
+  
+  floor1.x = 150;
+  floor2.x = 650;
   
   floor1.body.velocity.x = FLOOR_SPEED;
   floor2.body.velocity.x = -FLOOR_SPEED;
   pistolSetup();
+  
+  gameOverDisplay.setText('');
   
 }
 
@@ -234,7 +242,6 @@ function update()
     if(game.input.keyboard.isDown(Phaser.Keyboard.R))
     {
       //reinitialize
-      // recreate();//TODO:on test
       reset();
       reinitialize();
     }
