@@ -11,7 +11,7 @@ var ENEMY_LIFESPAN = 6500;
 var ENEMY_BASE_SPEED = 300;
 var TIME_SCORE_RATE = 2000;
 var FLOOR_SPEED = 100;
-var ENEMY_SHOOT_RATE = 1200;
+var ENEMY_SHOOT_RATE = 1700;
 var ENEMY_BULLET_SPEED = 600;
 var HARD_ENEMY_SPEED = 520;
 var WEAPON_BOX_SPAWN_RATE = 0.20;//probability
@@ -62,6 +62,7 @@ var debugDisplay;
 var ammoDisplay;
 var enemyWeapon;
 var weaponBox;
+var backgroundMusic;
 
 // load images and resources
 function preload()
@@ -82,11 +83,13 @@ function preload()
   game.load.spritesheet('rifle',      'asset/rifleHand.png', 73, 47);
   game.load.spritesheet('shotgun',    'asset/shotgunHand.png', 80, 47);
   
-  game.load.audio('enemyFire',       'asset/pulseGun.ogg');
+  game.load.audio('enemyFire',        'asset/pulseGun.ogg');
   game.load.audio('pistolFire',       'asset/pistolFire.wav');
   game.load.audio('rifleFire',        'asset/rifleFire.wav');
   game.load.audio('shotgunFire',      'asset/shotgunFire.wav');
   game.load.audio('reload',           'asset/reload.wav');
+  
+  game.load.audio('steamTech',        'asset/Steamtech-Mayhem_Looping.mp3');
 }
 
 function create()
@@ -206,6 +209,9 @@ function create()
       // music.play();
     }
   );
+  
+  backgroundMusic = game.add.audio('steamTech', 1, true);
+  backgroundMusic.play();
   
   reinitialize();
 }//create
