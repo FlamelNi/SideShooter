@@ -97,12 +97,6 @@ function create()
   var enterKey = game.input.keyboard.addKey(Phaser.Keyboard.ENTER);
   enterKey.onDown.add(goFull, this);
   
-  recreate();
-  reinitialize();
-}//create
-
-function recreate()
-{
   //  Background
   game.add.tileSprite(0, 0, game.width, game.height, 'gray');
 
@@ -214,6 +208,21 @@ function recreate()
     }
   );
   
+  reinitialize();
+}//create
+
+function reset()
+{
+  player.body.x = 300;
+  player.body.y = 400;
+  
+  floor1.body.x = 150;
+  floor2.body.x = 650;
+  
+  floor1.body.velocity.x = FLOOR_SPEED;
+  floor2.body.velocity.x = -FLOOR_SPEED;
+  pistolSetup();
+  
 }
 
 function update()
@@ -225,7 +234,8 @@ function update()
     if(game.input.keyboard.isDown(Phaser.Keyboard.R))
     {
       //reinitialize
-      recreate();
+      // recreate();//TODO:on test
+      reset();
       reinitialize();
     }
     return;
@@ -660,18 +670,20 @@ function shotgunSetup()
   playerWeapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
   playerWeapon.bulletSpeed = BULLET_SPEED;
   playerWeapon.fireRate = 0;
-  playerWeapon.bulletAngleVariance = 20;
+  playerWeapon.bulletAngleVariance = 0;
   
   ammo = 8;
   
   onWeaponFire = function()
   {
     playerWeapon.fire();
+    playerWeapon.bulletAngleVariance = 20;
     playerWeapon.fire();
     playerWeapon.fire();
     playerWeapon.fireRate = SHOTGUN_FIRE_RATE;
     playerWeapon.fire();
     playerWeapon.fireRate = 0;
+    playerWeapon.bulletAngleVariance = 0;
     
     var music;
     music = game.add.audio('shotgunFire');
