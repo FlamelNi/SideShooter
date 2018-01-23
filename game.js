@@ -15,6 +15,7 @@ var ENEMY_SHOOT_RATE = 1700;
 var ENEMY_BULLET_SPEED = 600;
 var HARD_ENEMY_SPEED = 520;
 var WEAPON_BOX_SPAWN_RATE = 0.20;//probability
+var HARD_SPAWN_RATE = 0.20;//probability
 
 //weapon constants
 var BULLET_SPEED = 1000;
@@ -22,10 +23,11 @@ var PISTOL_FIRE_RATE = 500;
 var RIFLE_FIRE_RATE = 200;
 var SHOTGUN_FIRE_RATE = 500;
 
-var enemy_level_cap = [10000,20000,99999999];
+var enemy_level_cap = [10000,30000,40000,99999999];
 /*
 {
   max speed reached,
+  occasionally spawn hard enemies,
   shoot bullet forward
 
 }
@@ -371,6 +373,15 @@ function spawnEnemy()
   {
     
     lastSpawnTime = game.time.now + Math.floor(Math.random()*1000%4)*200;
+    
+    if(getEnemyLevel() == 1)
+    {
+      if(Math.random() < HARD_SPAWN_RATE)
+      {
+        hardEnemySpawn();
+        return;
+      }
+    }
 
     //gets any element of enemies that is not objectified yet
     var enemy = enemies.getFirstExists(false);
@@ -423,7 +434,7 @@ function enemiesMove()
   //as a parameter 
   enemies.forEachExists(enemyMove, this);
   if( game.time.now >= (lastEnemyShootTime + ENEMY_SHOOT_RATE) &&
-      getEnemyLevel() >= 1 )
+      getEnemyLevel() >= 2 )
   {
     var music;
     music = game.add.audio('enemyFire');
