@@ -103,7 +103,7 @@ function create()
   game.add.tileSprite(0, 0, game.width, game.height, 'gray');
 
   //player set up
-  player = game.add.sprite(300, 400, 'player');
+  player = game.add.sprite(400, 400, 'player');
   player.anchor.set(0.5,0.5);
 
   //floor set up
@@ -218,7 +218,7 @@ function create()
 
 function reset()
 {
-  player = game.add.sprite(300, 400, 'player');
+  player = game.add.sprite(400, 400, 'player');
   player.anchor.set(0.5,0.5);
   
   game.physics.enable(player, Phaser.Physics.ARCADE);
