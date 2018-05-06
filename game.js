@@ -79,6 +79,7 @@ function preload()
   game.load.image('yellow',           'asset/particleYellow.png');
   game.load.image('bullet',           'asset/bullet.png');
   game.load.image('shell',            'asset/shell.png');
+  game.load.image('bulletHitbox',     'asset/bulletHitbox.png')
   
   game.load.spritesheet('weaponBox',  'asset/weaponBox.png', 13, 13);
   game.load.spritesheet('pistol',     'asset/pistolHand.png', 46, 47);
@@ -652,7 +653,7 @@ function rifleSetup()
     hand.width = -Math.abs(hand.width);
   
   //weapon
-  playerWeapon = game.add.weapon(20, 'bullet');
+  playerWeapon = game.add.weapon(20, 'bulletHitbox');
   playerWeapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
   playerWeapon.bulletSpeed = BULLET_SPEED;
   playerWeapon.fireRate = RIFLE_FIRE_RATE;
@@ -690,7 +691,7 @@ function shotgunSetup()
     hand.width = -Math.abs(hand.width);
   
   //weapon
-  playerWeapon = game.add.weapon(20, 'bullet');
+  playerWeapon = game.add.weapon(20, 'bulletHitbox');
   playerWeapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
   playerWeapon.bulletSpeed = BULLET_SPEED;
   playerWeapon.fireRate = 0;
@@ -738,7 +739,7 @@ function pistolSetup()
     hand.width = -Math.abs(hand.width);
   
   //weapon
-  playerWeapon = game.add.weapon(20, 'bullet');
+  playerWeapon = game.add.weapon(20, 'bulletHitbox');
   playerWeapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
   playerWeapon.bulletSpeed = BULLET_SPEED;
   playerWeapon.fireRate = PISTOL_FIRE_RATE;
